@@ -1,5 +1,5 @@
 """
-Aqui é fornecido uma lista de email atraves do arquivo conta.xlsx
+Aqui é fornecido uma lista de email atraves do arquivo base.xlsx
 
 Vai ser separado por 2 grupos... ex: 
 Alunos e Servidores( Org 1 + Org 2 + Org 3)
@@ -10,7 +10,7 @@ Alunos e Servidores( Org 1 + Org 2 + Org 3)
 import pandas as pd
 
 # Carregar a base de dados
-df_base = pd.read_excel('base.xlsx')
+df_base = pd.read_excel('base1.xlsx')
 
 # Listar valores únicos na coluna 'Org Unit Path [Required]'
 print("Valores únicos em 'Org Unit Path [Required]':")
@@ -22,7 +22,7 @@ df_base['Status'] = df_base['Last Sign In [READ ONLY]'].apply(
 )
 
 # Definindo grupos de Org Unit Path [Required]
-grupo1_nome = '/Administrativo'  # Usar o nome real conforme os valores únicos
+grupo1_nome = '/ALUNOS'  # Usar o nome real conforme os valores únicos
 df_base['Grupo'] = df_base['Org Unit Path [Required]'].apply(
     lambda x: grupo1_nome if isinstance(x, str) and x.strip() == grupo1_nome else 'Outros'
 )
