@@ -20,7 +20,7 @@ emails_to_check_path = 'conta.xlsx'
 def check_status(email, df_base):
     match = df_base[df_base['Email Address [Required]'] == email]['Last Sign In [READ ONLY]']
     if not match.empty:
-        return 'DESATIVADO' if match.iloc[0] == 'Never logged in' else 'ATIVO'
+        return 'DESATIVADO' if match.iloc[0] == 'Never logged in' else 'ATIVADA'
     else:
         return 'EMAIL NÃO ENCONTRADO'
 
