@@ -1,4 +1,5 @@
 """
+-> Feito por: Brunna Sousa <-
 Aqui é fornecido uma lista de email atraves do arquivo base.xlsx
 
 1 - preciso saber o numero total de contas, quantas estao ativas, e quantas estao desativadas e suas respectivas porcentagens.

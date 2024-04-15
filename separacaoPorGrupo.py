@@ -1,4 +1,5 @@
 """
+-> Feito por: Brunna Sousa <-
 Aqui é fornecido uma lista de email atraves do arquivo base.xlsx
 
 Vai ser separado por 2 grupos... ex: 

@@ -1,4 +1,5 @@
 """
+-> Feito por: Brunna Sousa <-
 Aqui é fornecido uma lista de email atraves do arquivo __.xlsx (o que foi baixado do google admin)
 ele junta First Name [Required] + Last Name [Required] = Full Name
 Email Address [Required] na coluna B

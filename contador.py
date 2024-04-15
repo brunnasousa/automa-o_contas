@@ -1,4 +1,5 @@
 """
+-> Feito por: Brunna Sousa <-
 Aqui é fornecido uma lista de email atraves do arquivo conta.xlsx
 e faz o comparativo com base.xlsx
 
