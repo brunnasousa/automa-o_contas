@@ -12,7 +12,7 @@ RESULTADO:
 import pandas as pd
 
 # Caminhos dos arquivos
-base_data_path = 'base.xlsx'
+base_data_path = 'semec belem 19042024.xlsx'
 emails_to_check_path = 'conta.xlsx'
 
 
@@ -49,11 +49,13 @@ print("Quantitativo e Porcentagem de Status baseado em 'conta.xlsx':")
 print(status_counts)
 print(status_percentage)
 
-# Exibindo o status de cada e-mail em 'conta.xlsx' com o nome da coluna dinâmico
-print("------------------------------")
+# Suponha que 'df_emails_to_check' já está definido e inclui as colunas de interesse
+email_column = 'Email'  # Substitua 'Email' pelo nome real da sua coluna de e-mail, se diferente
+
+# Exibindo o status de cada e-mail
 print("\nStatus dos e-mails da planilha 'conta':")
 print(df_emails_to_check[[email_column, 'Status']])
 
-print("---------------------------")
-print("---------------------------")
-print(df_emails_to_check['Status'].to_string(index=False))
+# Salvando os dados em uma planilha Excel
+with pd.ExcelWriter('Status_Emails.xlsx', engine='openpyxl') as writer:
+    df_emails_to_check[[email_column, 'Status']].to_excel(writer, index=False)
