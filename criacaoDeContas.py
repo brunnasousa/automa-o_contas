@@ -16,9 +16,14 @@ dominio_padrao = 'dominio.exemplo.com'
 dominio_professor = 'docente.' + dominio_padrao
 dominio_aluno = 'aluno.' + dominio_padrao
 
-# Carregar a base de dados
+# Carregar a base de dados - Google
 df_base = pd.read_excel('base.xlsx')
 
+# Planilha com os dados de entrada
+df_teste = pd.read_excel('teste.xlsx')
+
+
+############################################################################################################################
 # Criar a coluna 'Nome Completo'
 df_base['Nome Completo'] = df_base['First Name [Required]'] + ' ' + df_base['Last Name [Required]']
 
@@ -70,51 +75,58 @@ def gerar_email(partes, emails_gerados, tipo='RESTO'):
 emails_gerados = set(df_base['Email Address [Required]'].tolist())
 
 # Carregar a planilha de teste e verificar a existência da coluna "Tipo"
-df_teste = pd.read_excel('teste.xlsx')
 coluna_tipo = 'Tipo' in df_teste.columns
 
 # Função para verificar e criar e-mails e dividir os nomes
-def verificar_e_criar_email(nome, tipo='RESTO'):
-    nome_sem_acentos = remover_acentos(nome).lower()
+def verificar_e_criar_email(nome, tipo=None):
+    # Remover acentos e converter para minúsculas para comparação
+    nome_formatado = remover_acentos(nome).title()
+    nome_sem_acentos = nome_formatado.lower()
     nome_comparacao = df_base['Nome Completo'].apply(lambda x: remover_acentos(x).lower())
+    
     if nome_sem_acentos in nome_comparacao.values:
         usuario_existente = df_base[nome_comparacao == nome_sem_acentos].iloc[0].to_dict()
-        usuario_existente['Tipo'] = tipo if coluna_tipo else None
+        usuario_existente['Tipo'] = tipo if tipo else None
         return usuario_existente
     else:
-        partes = nome.split()
-        first_name = partes[0]
+        partes = nome_formatado.split()
+        first_name = partes[0]  # Já formatado anteriormente
         last_name = ' '.join(partes[1:]) if len(partes) > 1 else ''
         email = gerar_email(partes, emails_gerados, tipo)
         emails_gerados.add(email)
         novo_usuario = {
-            'Nome Completo': nome, 
-            'Email Address [Required]': email,
-            'First Name [Required]': first_name,
-            'Last Name [Required]': last_name
-        }
-        if coluna_tipo:
-            novo_usuario['Tipo'] = tipo
-        return novo_usuario
+        'Nome Completo': nome_formatado,
+        'Email Address [Required]': email,
+        'First Name [Required]': first_name,
+        'Last Name [Required]': last_name
+    }
+    # Apenas adicione o tipo se ele não for None ou 'RESTO'
+    if tipo and tipo.upper() != 'RESTO':
+        novo_usuario['Tipo'] = tipo
+    return novo_usuario
 
 # Processar os nomes na planilha de teste e criar e-mails
 resultados = []
 for _, row in df_teste.iterrows():
-    tipo_usuario = row['Tipo'].upper() if coluna_tipo and not pd.isna(row['Tipo']) else 'RESTO'
+    # Certifique-se de que o 'tipo' seja None se a célula estiver vazia ou seja 'RESTO'
+    tipo_usuario = None
+    if coluna_tipo:
+        tipo_usuario = str(row['Tipo']).strip().upper() if not pd.isna(row['Tipo']) and row['Tipo'].strip().upper() != 'RESTO' else None
     resultado = verificar_e_criar_email(row['Nome'], tipo=tipo_usuario)
     resultados.append(resultado)
 
 # Criar o DataFrame final
 df_resultado_final = pd.DataFrame(resultados)
 
-# Organizar as colunas, mantendo "Tipo", "First Name [Required]", e "Last Name [Required]" no final se necessário
-colunas_finais = df_base.columns.tolist() + (['Tipo'] if coluna_tipo else []) + ['First Name [Required]', 'Last Name [Required]']
-df_resultado_final = df_resultado_final[colunas_finais]
+# Certifique-se de que as colunas estão na ordem correta
+ordem_colunas = df_base.columns.tolist() + ['Tipo', 'First Name [Required]', 'Last Name [Required]'] if coluna_tipo else df_base.columns.tolist()
+df_resultado_final = df_resultado_final[ordem_colunas]
 
 # Salvar o DataFrame em um arquivo Excel
 df_resultado_final.to_excel('criação de contas.xlsx', index=False)
 
+print("Arquivo 'criação de contas.xlsx' criado com sucesso.")
+
 # Exibir ou salvar o resultado final
 print(df_resultado_final)
 
-print("Arquivo 'criação de contas.xlsx' criado com sucesso.")
