@@ -12,18 +12,25 @@ import pandas as pd
 import unicodedata
 
 # Configurações iniciais
-dominio_padrao = 'semed.limoeirodoajuru.pa.gov.br'
+dominio_padrao = 'dominio.exemplo.com'
 dominio_professor = 'docente.' + dominio_padrao
 dominio_aluno = 'aluno.' + dominio_padrao
 
+# Caminhos organizacionais
+org_padrao = '/Servidores'
+org_professor = '/Servidores'
+org_alunos = '/Alunos'
+
 # Carregar a base de dados - Google
-df_base = pd.read_excel('limoeiro teste.xlsx')
+df_base = pd.read_excel('base.xlsx')
 
 # Planilha com os dados de entrada
-df_teste = pd.read_excel('teste2.xlsx')
+df_teste = pd.read_excel('teste.xlsx')
 
 
-############################################################################################################################
+
+
+##########################################################################################
 # Criar a coluna 'Nome Completo'
 df_base['Nome Completo'] = df_base['First Name [Required]'] + ' ' + df_base['Last Name [Required]']
 
@@ -31,12 +38,13 @@ df_base['Nome Completo'] = df_base['First Name [Required]'] + ' ' + df_base['Las
 df_base['Status'] = df_base['Last Sign In [READ ONLY]'].apply(lambda x: 'DESATIVADO' if x == 'Never logged in' else 'ATIVADO')
 
 # Preparar as colunas de saída
-colunas_saida = ['Nome Completo', 'Email Address [Required]', 'Status']
-if 'Org Unit Path [Required]' in df_base.columns:
-    colunas_saida.append('Org Unit Path [Required]')
+colunas_saida = ['Nome Completo', 'Email Address [Required]', 'Status', 'Org Unit Path [Required]']
 
 # Ajustar o DataFrame base para incluir somente as colunas desejadas
 df_base = df_base[colunas_saida]
+
+# Conjunto para armazenar e-mails gerados
+emails_gerados = set(df_base['Email Address [Required]'].tolist())
 
 # Função para remover caracteres especiais e acentos
 def remover_acentos(texto):
@@ -47,20 +55,8 @@ def gerar_email(partes, emails_gerados, tipo='RESTO'):
     excluidas = ['de', 'dos', 'da', 'do', 'com']
     partes_email = [remover_acentos(parte).lower() for parte in partes if parte.lower() not in excluidas and parte.isalpha()]
     
-    # Garantir que 'tipo' é uma string antes de converter para maiúsculas
-    tipo = str(tipo).upper()
+    dominio = dominio_professor if tipo == 'PROFESSOR' else dominio_aluno if tipo == 'ALUNO' else dominio_padrao
 
-    # Definir o domínio de acordo com o tipo
-    dominio = dominio_padrao
-    if tipo == 'PROFESSOR':
-        dominio = dominio_professor
-    elif tipo == 'ALUNO':
-        dominio = dominio_aluno
-    
-    # Verificar se há elementos suficientes para formar um e-mail
-    if len(partes_email) < 2:
-        print(f"Não foi possível criar um e-mail para as partes: {partes}")
-        return None  # Retorna None ou trata como achar melhor
     email = f"{partes_email[0]}.{partes_email[-1]}@{dominio}"
     if email not in emails_gerados:
         return email
@@ -74,63 +70,45 @@ def gerar_email(partes, emails_gerados, tipo='RESTO'):
         sufixo += 1
     return f"{email_base}{sufixo}@{dominio}"
 
-
-# Conjunto para armazenar e-mails gerados
-emails_gerados = set(df_base['Email Address [Required]'].tolist())
-
-# Carregar a planilha de teste e verificar a existência da coluna "Tipo"
+# Verificar a existência da coluna "Tipo" na planilha de teste
 coluna_tipo = 'Tipo' in df_teste.columns
 
-# Função para verificar e criar e-mails e dividir os nomes
+# Função para verificar e criar e-mails e definir caminhos organizacionais
 def verificar_e_criar_email(nome, tipo=None):
-    # Remover acentos e converter para minúsculas para comparação
     nome_formatado = remover_acentos(nome).title()
     nome_sem_acentos = nome_formatado.lower()
     nome_comparacao = df_base['Nome Completo'].apply(lambda x: remover_acentos(x).lower())
     
     if nome_sem_acentos in nome_comparacao.values:
         usuario_existente = df_base[nome_comparacao == nome_sem_acentos].iloc[0].to_dict()
-        usuario_existente['Tipo'] = tipo if tipo else None
+        usuario_existente['Org Unit Path [Required]'] = org_professor if tipo == 'PROFESSOR' else org_alunos if tipo == 'ALUNO' else org_padrao
         return usuario_existente
     else:
         partes = nome_formatado.split()
-        first_name = partes[0]  # Já formatado anteriormente
-        last_name = ' '.join(partes[1:]) if len(partes) > 1 else ''
         email = gerar_email(partes, emails_gerados, tipo)
         emails_gerados.add(email)
+        org_path = org_professor if tipo == 'PROFESSOR' else org_alunos if tipo == 'ALUNO' else org_padrao
         novo_usuario = {
-        'Nome Completo': nome_formatado,
-        'Email Address [Required]': email,
-        'First Name [Required]': first_name,
-        'Last Name [Required]': last_name
-    }
-    # Apenas adicione o tipo se ele não for None ou 'RESTO'
-    if tipo and tipo.upper() != 'RESTO':
-        novo_usuario['Tipo'] = tipo
-    return novo_usuario
+            'Nome Completo': nome_formatado,
+            'Email Address [Required]': email,
+            'First Name [Required]': partes[0],
+            'Last Name [Required]': ' '.join(partes[1:]),
+            'Org Unit Path [Required]': org_path,
+        }
+        return novo_usuario
 
 # Processar os nomes na planilha de teste e criar e-mails
 resultados = []
 for _, row in df_teste.iterrows():
-    # Certifique-se de que o 'tipo' seja None se a célula estiver vazia ou seja 'RESTO'
-    tipo_usuario = None
-    if coluna_tipo:
-        tipo_usuario = str(row['Tipo']).strip().upper() if not pd.isna(row['Tipo']) and row['Tipo'].strip().upper() != 'RESTO' else None
+    tipo_usuario = str(row['Tipo']).strip().upper() if coluna_tipo and not pd.isna(row['Tipo']) else None
     resultado = verificar_e_criar_email(row['Nome'], tipo=tipo_usuario)
     resultados.append(resultado)
 
 # Criar o DataFrame final
 df_resultado_final = pd.DataFrame(resultados)
 
-# Certifique-se de que as colunas estão na ordem correta
-ordem_colunas = df_base.columns.tolist() + ['Tipo', 'First Name [Required]', 'Last Name [Required]'] if coluna_tipo else df_base.columns.tolist()
-df_resultado_final = df_resultado_final[ordem_colunas]
-
 # Salvar o DataFrame em um arquivo Excel
 df_resultado_final.to_excel('criação de contas.xlsx', index=False)
 
 print("Arquivo 'criação de contas.xlsx' criado com sucesso.")
-
-# Exibir ou salvar o resultado final
 print(df_resultado_final)
-
