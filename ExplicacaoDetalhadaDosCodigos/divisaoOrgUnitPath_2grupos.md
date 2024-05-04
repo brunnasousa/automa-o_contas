@@ -16,19 +16,13 @@ ex: grupo1_nome = '/ALUNOS'
 1 . Como é fornecido a base de dados completa do admin, ele vai separar em 2 grupos:
 ex: Alunos, Servidores, Professores( Org 1 + Org 2 + Org 3)
 
-<h2 align="center">
-    <img alt="readme: base baixada do google admin" title="readme-base" src="./imgs/base-googleadmin.png" />
-</h2>
-
+![Base de Dados Google Admin](/imgs/base-googleadmin.png)
 
 2. Definir qual era o grupo principal, para poder deixar o resto como segundo grupo:
 ex: Alunos, Servidores, Professores
 ao dizer que o grupo 1 = "Alunos", o grupo 2 automaticamente vai ser o resto = "Servidores" e "Professores".
 
-
-<h2 align="center">
-    <img alt="readme: separacao por grupo 1 e grupo 2" title="readme-groups" src="./imgs/explicacao-grupos.png" />
-</h2>
+![explicacao da separacao por grupo 1 e grupo 2](/imgs/explicacao-grupos.png)
 
 <h3> Explicação do Problema: </h3>
 
@@ -42,8 +36,6 @@ O código separa esses 2 grupos e me mostra a quantidade e a porcentagem com bas
 
 Ele retorna no terminal o resultado dessa separação
 
+![terminal apos executar o codigo](/imgs/retorno-divisaoOrgUnitPath_2grupos.png)
 
-<h2 align="center">
-    <img alt="readme: separacao por grupo 1 e grupo 2" title="readme-groups" src="./imgs/retorno-divisaoOrgUnitPath_2grupos.png" />
-</h2>
 obs: nesse exemplo não tinha /alunos

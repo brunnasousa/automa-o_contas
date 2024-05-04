@@ -12,3 +12,5 @@ ex: df_base = pd.read_excel('base.xlsx')
 ex: grupo1_nome = '/ALUNOS'
 
 Para mais explicações = [divisaoOrgUnitPath_2grupos](./ExplicacaoDetalhadaDosCodigos/divisaoOrgUnitPath_2grupos.md)
+
+![terminal apos executar o codigo](/imgs/retorno-divisaoOrgUnitPath_2grupos.png)
