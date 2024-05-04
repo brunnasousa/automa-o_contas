@@ -1,17 +1,21 @@
 """
 -> Feito por: Brunna Sousa <-
-Aqui é fornecido uma lista de email atraves do arquivo base.xlsx
+Aqui é fornecido a base de dados do Google Admin =  df_base 
+
+Preciso fornecer = grupo1_nome = '/ALUNOS'
+qual grupo vai ser separado
 
 Vai ser separado por 2 grupos... ex: 
-Alunos e Servidores( Org 1 + Org 2 + Org 3)
+Alunos, Professores, Servidores ( Org 1 + Org 2 + Org 3)
+Grupo 1 = alunos / Grupo 2 = RESTO = Professores, Servidores
 
-1 - vai me dizer a quantidade, porcentagem, quantos ativos em cada grupo 
+Resultado: quantidade, porcentagem, quantos ativos nos 2 grupos
 """
 
 import pandas as pd
 
 # Carregar a base de dados
-df_base = pd.read_excel('base1.xlsx')
+df_base = pd.read_excel('base.xlsx')
 
 # Listar valores únicos na coluna 'Org Unit Path [Required]'
 print("Valores únicos em 'Org Unit Path [Required]':")
