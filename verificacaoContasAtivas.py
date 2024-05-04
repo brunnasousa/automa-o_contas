@@ -13,7 +13,7 @@ import pandas as pd
 
 # Caminhos dos arquivos
 base_data_path = 'limoeiro teste.xlsx'
-emails_to_check_path = 'teste2.xlsx'
+emails_to_check_path = 'conta.xlsx'
 
 
 

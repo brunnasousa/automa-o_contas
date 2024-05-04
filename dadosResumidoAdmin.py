@@ -17,7 +17,7 @@ como bonus ainda da porcentagem e quantidade de usuarios, por grupo, ativos ou d
 import pandas as pd
 
 # Carregar os dados do arquivo Excel
-df_base = pd.read_excel('User_Download_17042024_075015.xlsx')
+df_base = pd.read_excel('limoeiro 26042024.xlsx')
 
 
 
