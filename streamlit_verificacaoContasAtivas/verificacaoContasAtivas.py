@@ -16,15 +16,12 @@ def convert_df_to_excel(df):
     output = BytesIO()
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
         df.to_excel(writer, index=False)
-        # Adicionando a data atual ao título da coluna de status
         today = date.today().strftime("%d/%m/%Y")
         workbook = writer.book
-        worksheet = writer.sheets['Sheet1']  # Nome da planilha pode mudar, ajuste conforme necessário
-        worksheet.write(0, df.shape[1] - 1, f"Status {today}")  # A última coluna é onde está a coluna de status
-
+        worksheet = writer.sheets['Sheet1']
+        worksheet.write(0, df.shape[1] - 1, f"Status {today}")
     processed_data = output.getvalue()
     return processed_data
-
 
 # Layout do Streamlit
 st.title('Análise de Status de Emails')
@@ -41,12 +38,10 @@ if base_data_file and emails_to_check_file:
     df_emails_to_check['Status'] = df_emails_to_check[email_column].apply(lambda email: check_status(email, df_base))
 
     status_counts = df_emails_to_check['Status'].value_counts()
-    total_emails = df_emails_to_check.shape[0]
-    status_percentage = (status_counts / total_emails) * 100
+    total_emails = df_emails_to_check.shape[0] - status_counts.get('TOTAL', 0)  # Subtracting 'TOTAL' if it exists
 
-    # Incluir a linha 'TOTAL'
-    status_counts['TOTAL'] = total_emails
-    status_percentage['TOTAL'] = 100  # O total é sempre 100% do total
+    status_counts.drop('TOTAL', errors='ignore', inplace=True)
+    status_percentage = (status_counts / total_emails) * 100
 
     # Criação de um DataFrame para apresentação
     summary_df = pd.DataFrame({
@@ -58,16 +53,21 @@ if base_data_file and emails_to_check_file:
     # Apresentação dos dados com st.dataframe
     st.markdown("### Resultado:")
     st.dataframe(summary_df.style.format({'percentagem': "{:.1f} %"}))
+
     # Organizando gráficos lado a lado
     col1, col2 = st.columns(2)
     with col1:
         st.subheader('Quantitativo de Status')
-        fig_quant = px.bar(status_counts.drop('TOTAL'), title="Quantidade por Status")
+        fig_quant = px.bar(status_counts, title="Quantidade por Status")
         st.plotly_chart(fig_quant, use_container_width=True)
 
     with col2:
         st.subheader('Porcentagem de Status')
-        fig_perc = px.pie(values=status_percentage, names=status_percentage.index, title="Porcentagem por Status")
+        pie_data = pd.DataFrame({
+            'Status': status_percentage.index,
+            'Percentagem': status_percentage.values
+        })
+        fig_perc = px.pie(pie_data, values='Percentagem', names='Status', title='Porcentagem por Status')
         st.plotly_chart(fig_perc, use_container_width=True)
 
     # Tabela de dados
@@ -80,3 +80,4 @@ if base_data_file and emails_to_check_file:
                        data=excel_data,
                        file_name="status_emails.xlsx",
                        mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+

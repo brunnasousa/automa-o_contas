@@ -13,7 +13,7 @@ file_names = ['verificacaoContasAtivas.py', 'dadosResumidoAdmin.py', 'divisaoOrg
 selected_file = st.sidebar.radio("Selecione um arquivo:", file_names, key="radio")
 
 # Execução do código do arquivo selecionado
-if selected_file == 'verificacaoContasAtivas.py':
+if selected_file == 'streamlit_verificacaoContasAtivas/verificacaoContasAtivas.py':
     execute_python_file(selected_file)
 else:
     file_path = os.path.join('path/para/os/seus/arquivos', selected_file)  # Substitua 'path/para/os/seus/arquivos' pelo diretório onde estão seus arquivos Python
