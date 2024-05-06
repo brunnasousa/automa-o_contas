@@ -1,7 +1,6 @@
-#pip install pandas plotly streamlit openpyxl xlsxwriter
+import streamlit as st
 import pandas as pd
 import plotly.express as px
-import streamlit as st
 from io import BytesIO
 from datetime import date
 
@@ -23,61 +22,68 @@ def convert_df_to_excel(df):
     processed_data = output.getvalue()
     return processed_data
 
-# Layout do Streamlit
-st.title('Análise de Status de Emails')
+def main():
+    st.title('Análise de Status de uma lista de Emails')
 
-# Upload de arquivos
-base_data_file = st.file_uploader("Upload sua base de dados:", type=['xlsx'])
-emails_to_check_file = st.file_uploader("Upload a lista de emails para verificar:", type=['xlsx'])
+    base_data_file = st.file_uploader("Upload sua base de dados:", type=['xlsx'], key="base_data_file")
+    
+    st.write("Certifique-se de que a lista de emails inclua a coluna 'Email'.")
+    emails_to_check_file = st.file_uploader("Upload a lista de emails para verificar: ", type=['xlsx'], key="emails_to_check_file")
+    
 
-if base_data_file and emails_to_check_file:
-    df_base = pd.read_excel(base_data_file)
-    df_emails_to_check = pd.read_excel(emails_to_check_file)
+    if base_data_file and emails_to_check_file:
+        df_base = pd.read_excel(base_data_file)
+        df_emails_to_check = pd.read_excel(emails_to_check_file)
 
-    email_column = df_emails_to_check.columns[0]
-    df_emails_to_check['Status'] = df_emails_to_check[email_column].apply(lambda email: check_status(email, df_base))
+        # Verificar se a coluna 'Email' está presente
+        if 'Email' not in df_emails_to_check.columns:
+            st.error("O arquivo da lista para verificar deve conter uma coluna A denominada 'Email' como titulo")
+            return
 
-    status_counts = df_emails_to_check['Status'].value_counts()
-    total_emails = df_emails_to_check.shape[0] - status_counts.get('TOTAL', 0)  # Subtracting 'TOTAL' if it exists
+        email_column = 'Email'  # Supõe que a coluna com e-mails se chama 'Email'
+        df_emails_to_check['Status'] = df_emails_to_check[email_column].apply(lambda email: check_status(email, df_base))
 
-    status_counts.drop('TOTAL', errors='ignore', inplace=True)
-    status_percentage = (status_counts / total_emails) * 100
+        status_counts = df_emails_to_check['Status'].value_counts()
+        total_emails = df_emails_to_check.shape[0]
 
-    # Criação de um DataFrame para apresentação
-    summary_df = pd.DataFrame({
-        'Status': status_counts.index,
-        'qtd': status_counts.values,
-        'percentagem': status_percentage.values
-    })
+        status_counts_with_total = pd.concat([status_counts, pd.Series([total_emails], index=['TOTAL'])])
+        status_percentage = (status_counts / total_emails) * 100
+        status_percentage_with_total = pd.concat([status_percentage, pd.Series([100.0], index=['TOTAL'])])
 
-    # Apresentação dos dados com st.dataframe
-    st.markdown("### Resultado:")
-    st.dataframe(summary_df.style.format({'percentagem': "{:.1f} %"}))
-
-    # Organizando gráficos lado a lado
-    col1, col2 = st.columns(2)
-    with col1:
-        st.subheader('Quantitativo de Status')
-        fig_quant = px.bar(status_counts, title="Quantidade por Status")
-        st.plotly_chart(fig_quant, use_container_width=True)
-
-    with col2:
-        st.subheader('Porcentagem de Status')
-        pie_data = pd.DataFrame({
-            'Status': status_percentage.index,
-            'Percentagem': status_percentage.values
+        summary_df = pd.DataFrame({
+            'Status': status_counts_with_total.index,
+            'qtd': status_counts_with_total.values,
+            'percentagem': status_percentage_with_total.values
         })
-        fig_perc = px.pie(pie_data, values='Percentagem', names='Status', title='Porcentagem por Status')
-        st.plotly_chart(fig_perc, use_container_width=True)
 
-    # Tabela de dados
-    st.subheader('Status dos Emails')
-    st.write(df_emails_to_check[[email_column, 'Status']])
+        st.markdown("### Resultado:")
+        st.dataframe(summary_df.style.format({'percentagem': "{:.1f} %"}))
 
-    # Download de Excel
-    excel_data = convert_df_to_excel(df_emails_to_check[[email_column, 'Status']])
-    st.download_button(label="📥 Download Excel",
-                       data=excel_data,
-                       file_name="status_emails.xlsx",
-                       mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        col1, col2 = st.columns(2)
+        with col1:
+            st.subheader('Quantitativo de Status')
+            fig_quant = px.bar(status_counts, title="Quantidade por Status")
+            st.plotly_chart(fig_quant, use_container_width=True)
 
+        with col2:
+            st.subheader('Porcentagem de Status')
+            pie_data = pd.DataFrame({
+                'Status': status_percentage.index,
+                'Percentagem': status_percentage.values
+            })
+            fig_perc = px.pie(pie_data, values='Percentagem', names='Status', title='Porcentagem por Status')
+            st.plotly_chart(fig_perc, use_container_width=True)
+
+        st.subheader('Status dos Emails')
+        st.write(df_emails_to_check[[email_column, 'Status']])
+
+        excel_data = convert_df_to_excel(df_emails_to_check[[email_column, 'Status']])
+        st.download_button(label="📥 Download Excel",
+                           data=excel_data,
+                           file_name="status_emails.xlsx",
+                           mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+
+if __name__ == "__main__":
+    main()
+
+# Feito por Brunna Sousa

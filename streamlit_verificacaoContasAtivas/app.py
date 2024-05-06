@@ -1,20 +1,40 @@
 #streamlit run app.py   
 import streamlit as st
-import os
+from verificacaoContasAtivas import main as verifica_main
+from dadosResumidoAdmin import main as dados_main
 
-# Função para executar o conteúdo de um arquivo Python
-def execute_python_file(file_path):
-    with open(file_path, 'r', encoding='utf-8') as file:
-        code = file.read()
-    exec(code, globals())
+# Definindo uma função para iniciar ou resetar a tela inicial
+def set_initial_state():
+    st.session_state.current_page = 'home'
 
-# Listando os arquivos disponíveis
-file_names = ['verificacaoContasAtivas.py', 'dadosResumidoAdmin.py', 'divisaoOrgUnitPath_2grupos.py', 'relatorio.py', 'verificacaoContasAtivas.py']
-selected_file = st.sidebar.radio("Selecione um arquivo:", file_names, key="radio")
+# Verificando se o estado atual existe, se não, inicializa
+if 'current_page' not in st.session_state:
+    set_initial_state()
 
-# Execução do código do arquivo selecionado
-if selected_file == 'streamlit_verificacaoContasAtivas/verificacaoContasAtivas.py':
-    execute_python_file(selected_file)
-else:
-    file_path = os.path.join('path/para/os/seus/arquivos', selected_file)  # Substitua 'path/para/os/seus/arquivos' pelo diretório onde estão seus arquivos Python
-    execute_python_file(file_path)
+st.title('Bem-vindo ao Gerenciador de Contas')
+
+# Adicionando os botões na barra lateral
+if st.sidebar.button('Dados Resumidos do Admin'):
+    st.session_state.current_page = 'dados'
+
+if st.sidebar.button('Verificação de Contas Ativas'):
+    st.session_state.current_page = 'verifica'
+
+# Mostrando conteúdos baseados no estado
+if st.session_state.current_page == 'verifica':
+    verifica_main()
+elif st.session_state.current_page == 'dados':
+    dados_main()
+elif st.session_state.current_page == 'home':
+    st.write('Por favor, escolha uma opção ao lado para visualizar os dados.')
+
+
+for _ in range(10):  # Ajuste o número baseado no tamanho da tela e conteúdo
+    st.sidebar.write("")
+
+# Assinatura no final da barra lateral
+st.sidebar.markdown("---")
+st.sidebar.markdown("*Feito por Brunna*", unsafe_allow_html=True)
+
+
+# Feito por Brunna Sousa

@@ -1,76 +1,111 @@
 import streamlit as st
 import pandas as pd
+import plotly.express as px
+from io import BytesIO
+import plotly.graph_objects as go
 
-# Função para processar os dados e criar o arquivo Excel
 def process_data(df_base):
-    # Combinar as colunas 'First Name [Required]' e 'Last Name [Required]' para formar o nome completo
     df_base['Full Name'] = df_base['First Name [Required]'] + ' ' + df_base['Last Name [Required]']
-
-    # Definir o status baseado em 'Last Sign In [READ ONLY]'
     df_base['Status'] = df_base['Last Sign In [READ ONLY]'].apply(lambda x: 'DESATIVADO' if x == 'Never logged in' else 'ATIVO')
-
-    # Selecionar as colunas relevantes para o novo arquivo Excel
     columns_to_include = ['Full Name', 'Email Address [Required]', 'Status']
     if 'Org Unit Path [Required]' in df_base.columns:
         columns_to_include.append('Org Unit Path [Required]')
+    return df_base[columns_to_include]
 
-    df_final = df_base[columns_to_include]
-
-    return df_final
-
-# Função para exibir as estatísticas
 def display_statistics(df_base):
-    # Número total de contas
     total_count = df_base.shape[0]
-
-    # Contagem e porcentagem por Status
     status_counts = df_base['Status'].value_counts()
     status_percentage = (status_counts / total_count) * 100
+    status_summary = pd.DataFrame({
+        'Status': status_counts.index,
+        'qtd': status_counts.values,
+        'percentagem': status_percentage.values
+    })
+    # Adicionando linha 'TOTAL' apenas para a tabela, não para os gráficos
+    status_summary_with_total = status_summary.copy()
+    status_summary_with_total.loc[len(status_summary_with_total.index)] = ['TOTAL', total_count, 100.0]
 
-    # Exibir os resultados de forma formatada
     st.subheader("1 - Contagem e Porcentagem de Status Geral:")
-    st.write(f"ATIVO: {status_counts.get('ATIVO', 0)} = {status_percentage.get('ATIVO', 0):.2f}%")
-    st.write(f"DESATIVADO: {status_counts.get('DESATIVADO', 0)} = {status_percentage.get('DESATIVADO', 0):.2f}%")
-    st.write(f"TOTAL: {total_count} = 100.00%")
+    st.dataframe(status_summary_with_total.style.format({'percentagem': "{:.2f}%"}))
 
-    # Verificar se a coluna 'Org Unit Path [Required]' existe para calcular as porcentagens
+    # Usando dados sem 'TOTAL' para os gráficos
+    col1, col2 = st.columns(2)
+    with col1:
+        fig_quant = px.bar(status_summary, x='Status', y='qtd', title="Quantidade por Status")
+        st.plotly_chart(fig_quant, use_container_width=True)
+    with col2:
+        fig_perc = px.pie(status_summary, values='percentagem', names='Status', title='Porcentagem por Status')
+        st.plotly_chart(fig_perc, use_container_width=True)
+
+
+    ##### 2 
     if 'Org Unit Path [Required]' in df_base.columns:
-        # 2 - Quantitativo e porcentagens por Org Unit Path [Required]
         org_unit_counts = df_base['Org Unit Path [Required]'].value_counts()
         org_unit_percentage = (org_unit_counts / total_count) * 100
+        org_summary = pd.DataFrame({
+            'Org Unit Path': org_unit_counts.index,
+            'qtd': org_unit_counts.values,
+            'percentagem': org_unit_percentage.values
+        })
+        org_summary.loc[len(org_summary.index)] = ['TOTAL', total_count, 100.0]
 
-        st.subheader("2 - Contagem e Porcentagem por Org Unit Path:")
-        for path, count in org_unit_counts.items():
-            st.write(f"{path}: {count} = {org_unit_percentage[path]:.2f}%")
-        st.write(f"TOTAL: {total_count} = 100.00%")
+        col1, col2 = st.columns([3, 2])
+        with col1:
+            st.subheader("2 - Contagem e Porcentagem por Org Unit Path:")
+            st.dataframe(org_summary.style.format({'percentagem': "{:.2f}%"}))
+        with col2:
+            fig_perc_path = px.pie(org_summary[org_summary['Org Unit Path'] != 'TOTAL'], values='percentagem', names='Org Unit Path', title='Porcentagem por Org Unit Path')
+            st.plotly_chart(fig_perc_path, use_container_width=True)
 
-        # 3 - Quantitativos e porcentagens por status em cada Org Unit Path [Required]
-        org_status_counts = df_base.groupby('Org Unit Path [Required]')['Status'].value_counts().unstack(fill_value=0)
-        org_status_percentage = (org_status_counts.T / org_status_counts.sum(axis=1)).T * 100
 
+        org_summary_filtered = org_summary[org_summary['Org Unit Path'] != 'TOTAL']  # Filtrando 'TOTAL'
+        fig_quant_path = px.bar(org_summary_filtered, x='Org Unit Path', y='qtd', title="Quantidade por Org Unit Path")
+        st.plotly_chart(fig_quant_path)
+
+        # Criando uma única tabela para todos os dados de 'Org Unit Path'
+        all_status_by_path = pd.DataFrame(columns=['Org Unit Path', 'Status', 'qtd', 'percentagem'])
+        for path, data in df_base.groupby('Org Unit Path [Required]'):
+            status_by_path = pd.DataFrame({
+                'Status': data['Status'].value_counts().index,
+                'qtd': data['Status'].value_counts().values,
+                'percentagem': (data['Status'].value_counts() / data.shape[0] * 100).values,
+                'Org Unit Path': path
+            })
+            all_status_by_path = pd.concat([all_status_by_path, status_by_path])
+
+            # Adicionando uma linha total para cada grupo
+            total_row = pd.DataFrame({
+                'Status': ['TOTAL'],
+                'qtd': [data.shape[0]],
+                'percentagem': [100.0],
+                'Org Unit Path': [path]
+            })
+            all_status_by_path = pd.concat([all_status_by_path, total_row])
+
+        # Exibindo a tabela única
         st.subheader("3 - Contagem e Porcentagem de Status por Org Unit Path:")
-        for path, row in org_status_counts.iterrows():
-            st.write(f"\nOrg Unit Path [Required] = {path}")
-            for status in row.index:
-                st.write(f"{status}: {row[status]} = {org_status_percentage.loc[path, status]:.2f}%")
-            st.write(f"TOTAL: {org_status_counts.loc[path].sum()} = 100.00%")
+        st.dataframe(all_status_by_path.style.format({'percentagem': "{:.2f}%"}))
 
-# Layout do Streamlit
-st.title('Análise de Status de Emails')
+    
 
-# Upload do arquivo Excel
-uploaded_file = st.file_uploader("Upload sua base de dados:", type=['xlsx'])
 
-if uploaded_file is not None:
-    # Ler o arquivo Excel
-    df_base = pd.read_excel(uploaded_file)
+def main():
+    st.title('Análise de Dados Administrativos')
+    uploaded_file = st.file_uploader("Upload sua base de dados:", type=['xlsx'], key="unique_key_for_admin")
 
-    # Processar os dados e criar o arquivo Excel
-    df_final = process_data(df_base)
+    if uploaded_file is not None:
+        df_base = pd.read_excel(uploaded_file)
+        df_final = process_data(df_base)
+        
+        # Download do DataFrame final para Excel
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            df_final.to_excel(writer, index=False)
+            writer.book.close()
+        output.seek(0)
+        st.download_button(label="📥 Download Excel", data=output, file_name="usuarios_filtrados.xlsx", mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
-    # Exibir estatísticas
-    display_statistics(df_base)
-
-    # Download do arquivo Excel final
-    excel_data = df_final.to_excel(index=False)
-    st.download_button(label="📥 Download Excel", data=excel_data, file_name="usuarios_filtrados.xlsx", mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        display_statistics(df_base)
+        
+if __name__ == "__main__":
+    main()
